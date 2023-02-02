@@ -232,7 +232,7 @@ class SPOpt(SPBase):
 
     def solve_loop(self, solver_options=None,
                    use_scenarios_not_subproblems=False,
-                   dtiming=False,
+                   dtiming=True,
                    gripe=False,
                    disable_pyomo_signal_handling=False,
                    tee=False,
@@ -279,6 +279,8 @@ class SPOpt(SPBase):
         _vb("Entering solve_loop function.")
         logger.debug("  early solve_loop for rank={}".format(self.cylinder_rank))
 
+        global_toc("REALLY IN SOLVE LOOP")
+
         # note that when there is no bundling, scenarios are subproblems
         if use_scenarios_not_subproblems:
             s_source = self.local_scenarios
@@ -286,6 +288,7 @@ class SPOpt(SPBase):
             s_source = self.local_subproblems
         for k,s in s_source.items():
             logger.debug("  in loop solve_loop k={}, rank={}".format(k, self.cylinder_rank))
+#            global_toc(f"About to solve subproblem {k}")
             if tee:
                 print(f"Tee solve for {k} on global rank {self.global_rank}")
             pyomo_solve_time = self.solve_one(solver_options, k, s,
@@ -296,14 +299,23 @@ class SPOpt(SPBase):
                 disable_pyomo_signal_handling=disable_pyomo_signal_handling
             )
 
-        if dtiming:
+#        global_toc(f"Done with all subproblems - rank={self.global_rank}",True)            
+
+        if False: # dtiming
+            global_toc("Starting gather")
             all_pyomo_solve_times = self.mpicomm.gather(pyomo_solve_time, root=0)
             if self.cylinder_rank == 0:
                 print("Pyomo solve times (seconds):")
-                print("\tmin=%4.2f mean=%4.2f max=%4.2f" %
-                      (np.min(all_pyomo_solve_times),
-                      np.mean(all_pyomo_solve_times),
-                      np.max(all_pyomo_solve_times)))
+                print("type=%s, rank=,%4d, min=,%4.2f, mean=,%4.2f, max=,%4.2f, numsolves=,%4d" %                
+                      (str(self),
+                       self.global_rank,
+                       np.min(all_pyomo_solve_times),
+                       np.mean(all_pyomo_solve_times),
+                       np.max(all_pyomo_solve_times),
+                       len(all_pyomo_solve_times)))
+            global_toc("Ending gather")                
+
+#        global_toc(f"Returning from solve_loop - rank={self.global_rank}", True)                            
 
 
     def Eobjective(self, verbose=False):

@@ -181,10 +181,12 @@ class PHBase(mpisppy.spopt.SPOpt):
 
         # compute node xbar values(reduction)
         for nodename in nodenames:
+            global_toc(f"Starting all-reduce for node={nodename}, global_rank={self.global_rank}",True)
             self.comms[nodename].Allreduce(
                 [local_concats[nodename], MPI.DOUBLE],
                 [global_concats[nodename], MPI.DOUBLE],
                 op=MPI.SUM)
+            global_toc(f"Done with all-reduce for node={nodename}, global_rank={self.global_rank}",True)            
 
         # set the xbar and xsqbar in all the scenarios
         for k,s in self.local_scenarios.items():
@@ -717,7 +719,6 @@ class PHBase(mpisppy.spopt.SPOpt):
         if self.options["verbose"]:
             print ("About to call PH Iter0 solve loop on rank={}".format(self.cylinder_rank))
         global_toc("Entering solve loop in PHBase.Iter0")
-
         self.solve_loop(solver_options=self.current_solver_options,
                         dtiming=dtiming,
                         gripe=True,
@@ -821,16 +822,16 @@ class PHBase(mpisppy.spopt.SPOpt):
                 global_toc(f"\nInitiating PH Iteration {self._PHIter}\n", self.cylinder_rank == 0)
 
             # Compute xbar
-            #global_toc('Rank: {} - Before Compute_Xbar'.format(self.cylinder_rank), True)
+            global_toc('Rank: {} - Before Compute_Xbar'.format(self.cylinder_rank), self.cylinder_rank == 0)
             self.Compute_Xbar(verbose)
-            #global_toc('Rank: {} - After Compute_Xbar'.format(self.cylinder_rank), True)
+            #global_toc('Rank: {} - After Compute_Xbar'.format(self.cylinder_rank), self.cylinder_rank == 0)
 
             # update the weights        
             self.Update_W(verbose)
-            #global_toc('Rank: {} - After Update_W'.format(self.cylinder_rank), True)
+            global_toc('Rank: {} - After Update_W'.format(self.cylinder_rank), self.cylinder_rank == 0)
 
             self.conv = self.convergence_diff()
-            #global_toc('Rank: {} - After convergence_diff'.format(self.cylinder_rank), True)
+            global_toc('Rank: {} - After convergence_diff'.format(self.cylinder_rank), self.cylinder_rank == 0)
             if have_extensions:
                 self.extobject.miditer()
 
@@ -854,6 +855,9 @@ class PHBase(mpisppy.spopt.SPOpt):
                  and self.options["tee-rank0-solves"]
                 and self.cylinder_rank == 0
             )
+#            global_toc('Rank: {} - Starting solve loop'.format(self.cylinder_rank), True)
+#            import gc
+#            gc.disable()
             self.solve_loop(
                 solver_options=self.current_solver_options,
                 dtiming=dtiming,
@@ -862,15 +866,22 @@ class PHBase(mpisppy.spopt.SPOpt):
                 tee=teeme,
                 verbose=verbose
             )
+            global_toc('Rank: {} - After solve loop'.format(self.cylinder_rank), True)            
 
             if have_extensions:
                 self.extobject.enditer()
 
+            global_toc('After extensions')
+
             if self.spcomm is not None:
+                global_toc("Just before spcomm sync")
                 self.spcomm.sync()
+                global_toc("Just after spcomm sync")                
                 if self.spcomm.is_converged():
                     global_toc("Cylinder convergence", self.cylinder_rank == 0)
                     break
+
+            global_toc(f'After convergence check - rank={self.global_rank}',True)                
 
             if dprogress and self.cylinder_rank == 0:
                 print("")
@@ -880,7 +891,9 @@ class PHBase(mpisppy.spopt.SPOpt):
                 print("Elapsed time:   %6.2f" % (time.perf_counter() - self.start_time))
 
             if dconvergence_detail:
-                self.report_var_values_at_rank0(header="Convergence detail:")                
+                self.report_var_values_at_rank0(header="Convergence detail:")
+
+            global_toc(f'At bitter end of iteration k loop - rank={self.global_rank}',True)                                
 
         else: # no break, (self._PHIter == max_iterations)
             # NOTE: If we return for any other reason things are reasonably in-sync.

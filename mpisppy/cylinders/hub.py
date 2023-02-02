@@ -340,6 +340,7 @@ class Hub(SPCommunicator):
                 This assumes that values contains a slot at the end for the
                 write_id
         """
+        global_toc(f"hub-to-spoke - entering - rank={self.global_rank}",True)                        
         expected_length = self.local_lengths[spoke_strata_rank - 1] + 1
         if len(values) != expected_length:
             raise RuntimeError(
@@ -347,13 +348,16 @@ class Hub(SPCommunicator):
                 f"into local buffer of length {expected_length}"
             )
         # this is so the spoke ranks all get the same write_id at approximately the same time
-        self.cylinder_comm.Barrier()
+#        global_toc("hub-to-spoke - before barrier")
+#        self.cylinder_comm.Barrier()
+#        global_toc("hub-to-spoke - after barrier")        
         self.local_write_ids[spoke_strata_rank - 1] += 1
         values[-1] = self.local_write_ids[spoke_strata_rank - 1]
         window = self.windows[spoke_strata_rank - 1]
         window.Lock(self.strata_rank)
         window.Put((values, len(values), MPI.DOUBLE), self.strata_rank)
         window.Unlock(self.strata_rank)
+        global_toc(f"hub-to-spoke - leaving - rank={self.global_rank}",True)                
 
     def hub_from_spoke(self, values, spoke_num):
         """ spoke_num is the rank in the strata_comm, so it is 1-based not 0-based
@@ -362,6 +366,7 @@ class Hub(SPCommunicator):
                 is_new (bool): Indicates whether the "gotten" values are new,
                     based on the write_id.
         """
+        global_toc(f"hub-from-spoke - entering - rank={self.global_rank}",True)                        
         expected_length = self.remote_lengths[spoke_num - 1] + 1
         if len(values) != expected_length:
             raise RuntimeError(
@@ -371,7 +376,7 @@ class Hub(SPCommunicator):
         # DLW Jan 2023: I think this does not hurt APH because the listener doe not use this comm...
         # so the window in each rank gets read at approximately the same time,
         # and so has the same write_id
-        self.cylinder_comm.Barrier()
+#        self.cylinder_comm.Barrier()
         window = self.windows[spoke_num - 1]
         window.Lock(spoke_num)
         window.Get((values, len(values), MPI.DOUBLE), spoke_num)
@@ -381,7 +386,9 @@ class Hub(SPCommunicator):
         if revert:
             if values[-1] > self.remote_write_ids[spoke_num - 1]:
                 self.remote_write_ids[spoke_num - 1] = values[-1]
+                global_toc(f"hub-from-spoke - leaving (True) - rank={self.global_rank}",True)                                        
                 return True
+            global_toc(f"hub-from-spoke - leaving (False) - rank={self.global_rank}",True)                                    
         else:
             new_id = int(values[-1])
             local_val = np.array((new_id,), 'i')
@@ -546,10 +553,14 @@ class PHHub(Hub):
     def send_ws(self):
         """ Send dual weights to the appropriate spokes
         """
+        global_toc("PHHUB - SEND WS - STARATING")
         self.opt._populate_W_cache(self.w_send_buffer)
+        global_toc("DONE POPULATING CACHE")
         logging.debug("hub is sending Ws={}".format(self.w_send_buffer))
         for idx in self.w_spoke_indices:
+            global_toc(f"Hub to spoke index={idx}")
             self.hub_to_spoke(self.w_send_buffer, idx)
+        global_toc("PHBHUB - SEND WS - ENDING")
 
 
 class LShapedHub(Hub):
