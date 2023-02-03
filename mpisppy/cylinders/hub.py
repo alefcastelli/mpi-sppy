@@ -340,7 +340,8 @@ class Hub(SPCommunicator):
                 This assumes that values contains a slot at the end for the
                 write_id
         """
-        global_toc(f"hub-to-spoke - entering - rank={self.global_rank}",True)                        
+        start_time=time.time()
+#        global_toc(f"hub-to-spoke - entering - rank={self.global_rank}",True)                        
         expected_length = self.local_lengths[spoke_strata_rank - 1] + 1
         if len(values) != expected_length:
             raise RuntimeError(
@@ -357,7 +358,7 @@ class Hub(SPCommunicator):
         window.Lock(self.strata_rank)
         window.Put((values, len(values), MPI.DOUBLE), self.strata_rank)
         window.Unlock(self.strata_rank)
-        global_toc(f"hub-to-spoke - leaving - rank={self.global_rank}",True)                
+        global_toc(f"hub-to-spoke - leaving - iteration={self.current_iteration()} - global rank={self.global_rank} - total time={time.time()-start_time}",True)                
 
     def hub_from_spoke(self, values, spoke_num):
         """ spoke_num is the rank in the strata_comm, so it is 1-based not 0-based
@@ -366,7 +367,8 @@ class Hub(SPCommunicator):
                 is_new (bool): Indicates whether the "gotten" values are new,
                     based on the write_id.
         """
-        global_toc(f"hub-from-spoke - entering - rank={self.global_rank}",True)                        
+        start_time=time.time()
+#        global_toc(f"hub-from-spoke - entering - rank={self.global_rank}",True)                        
         expected_length = self.remote_lengths[spoke_num - 1] + 1
         if len(values) != expected_length:
             raise RuntimeError(
@@ -386,9 +388,9 @@ class Hub(SPCommunicator):
         if revert:
             if values[-1] > self.remote_write_ids[spoke_num - 1]:
                 self.remote_write_ids[spoke_num - 1] = values[-1]
-                global_toc(f"hub-from-spoke - leaving (True) - rank={self.global_rank}",True)                                        
+                global_toc(f"hub-from-spoke - leaving (True) - iteration={self.current_iteration()} - global rank={self.global_rank} - total time in func={time.time()-start_time}",True)                                        
                 return True
-            global_toc(f"hub-from-spoke - leaving (False) - rank={self.global_rank}",True)                                    
+            global_toc(f"hub-from-spoke - leaving (False) - iteration={self.current_iteration()} - global rank={self.global_rank} - total time in func={time.time()-start_time}",True)                                    
         else:
             new_id = int(values[-1])
             local_val = np.array((new_id,), 'i')
@@ -553,14 +555,14 @@ class PHHub(Hub):
     def send_ws(self):
         """ Send dual weights to the appropriate spokes
         """
-        global_toc("PHHUB - SEND WS - STARATING")
+#        global_toc("PHHUB - SEND WS - STARATING")
         self.opt._populate_W_cache(self.w_send_buffer)
-        global_toc("DONE POPULATING CACHE")
+#        global_toc("DONE POPULATING CACHE")
         logging.debug("hub is sending Ws={}".format(self.w_send_buffer))
         for idx in self.w_spoke_indices:
-            global_toc(f"Hub to spoke index={idx}")
+#            global_toc(f"Hub to spoke index={idx}")
             self.hub_to_spoke(self.w_send_buffer, idx)
-        global_toc("PHBHUB - SEND WS - ENDING")
+#        global_toc("PHBHUB - SEND WS - ENDING")
 
 
 class LShapedHub(Hub):

@@ -279,7 +279,7 @@ class SPOpt(SPBase):
         _vb("Entering solve_loop function.")
         logger.debug("  early solve_loop for rank={}".format(self.cylinder_rank))
 
-        global_toc("REALLY IN SOLVE LOOP")
+#        global_toc("REALLY IN SOLVE LOOP")
 
         # note that when there is no bundling, scenarios are subproblems
         if use_scenarios_not_subproblems:

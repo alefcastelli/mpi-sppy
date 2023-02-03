@@ -181,12 +181,12 @@ class PHBase(mpisppy.spopt.SPOpt):
 
         # compute node xbar values(reduction)
         for nodename in nodenames:
-            global_toc(f"Starting all-reduce for node={nodename}, global_rank={self.global_rank}",True)
+            global_toc(f"Starting x-bar all-reduce at iteration={self._PHIter} for node={nodename}, global_rank={self.global_rank}",True)
             self.comms[nodename].Allreduce(
                 [local_concats[nodename], MPI.DOUBLE],
                 [global_concats[nodename], MPI.DOUBLE],
                 op=MPI.SUM)
-            global_toc(f"Done with all-reduce for node={nodename}, global_rank={self.global_rank}",True)            
+            global_toc(f"Done with x-bar all-reduce at iteration={self._PHIter} for node={nodename}, global_rank={self.global_rank}",True)            
 
         # set the xbar and xsqbar in all the scenarios
         for k,s in self.local_scenarios.items():
@@ -866,12 +866,12 @@ class PHBase(mpisppy.spopt.SPOpt):
                 tee=teeme,
                 verbose=verbose
             )
-            global_toc('Rank: {} - After solve loop'.format(self.cylinder_rank), True)            
+#            global_toc('Rank: {} - After solve loop'.format(self.cylinder_rank), True)            
 
             if have_extensions:
                 self.extobject.enditer()
 
-            global_toc('After extensions')
+#            global_toc('After extensions')
 
             if self.spcomm is not None:
                 global_toc("Just before spcomm sync")
@@ -881,7 +881,7 @@ class PHBase(mpisppy.spopt.SPOpt):
                     global_toc("Cylinder convergence", self.cylinder_rank == 0)
                     break
 
-            global_toc(f'After convergence check - rank={self.global_rank}',True)                
+#            global_toc(f'After convergence check - rank={self.global_rank}',True)                
 
             if dprogress and self.cylinder_rank == 0:
                 print("")
@@ -893,7 +893,7 @@ class PHBase(mpisppy.spopt.SPOpt):
             if dconvergence_detail:
                 self.report_var_values_at_rank0(header="Convergence detail:")
 
-            global_toc(f'At bitter end of iteration k loop - rank={self.global_rank}',True)                                
+            global_toc(f'At bitter end of iteration k={self._PHIter} - global rank={self.global_rank}',True)                                
 
         else: # no break, (self._PHIter == max_iterations)
             # NOTE: If we return for any other reason things are reasonably in-sync.
