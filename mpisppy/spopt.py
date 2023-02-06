@@ -118,6 +118,8 @@ class SPOpt(SPBase):
                 Pyomo solve time in seconds.
         """
 
+        
+        global_toc(f"Starting to solve k={k} - rank={self.global_rank}",True)            
 
         def _vb(msg): 
             if verbose and self.cylinder_rank == 0:
@@ -137,7 +139,10 @@ class SPOpt(SPBase):
                 raise RuntimeError('Could not find any active objectives '
                                    'for scenario {sn}'.format(sn=s._name))
             else:
+                foo_time = time.time()
                 s._solver_plugin.set_objective(active_objective_datas[0])
+                HUB=hasattr(self,"_PHIter")
+                global_toc(f"Pyomo set_objective time={time.time()-foo_time} for k={k} - rank={self.global_rank} - HUB={HUB}",True)                                                                                    
 
             if dtiming:
 
@@ -151,6 +156,8 @@ class SPOpt(SPBase):
                           (np.mean(all_set_objective_times),
                            np.mean(all_set_objective_times),
                            np.max(all_set_objective_times)))
+
+        global_toc(f"Done with update objective for k={k} - rank={self.global_rank}",True)                                                                    
 
         if self.extensions is not None:
             results = self.extobject.pre_solve(s)
@@ -170,6 +177,7 @@ class SPOpt(SPBase):
             solve_keyword_args["save_results"] = False
         elif disable_pyomo_signal_handling:
             solve_keyword_args["use_signal_handling"] = False
+
 
         try:
             results = s._solver_plugin.solve(s,
@@ -227,6 +235,8 @@ class SPOpt(SPBase):
         if self.extensions is not None:
             results = self.extobject.post_solve(s, results)
 
+        global_toc(f"Done solving k={k} - rank={self.global_rank}",True)                        
+
         return pyomo_solve_time
 
 
@@ -280,6 +290,8 @@ class SPOpt(SPBase):
         logger.debug("  early solve_loop for rank={}".format(self.cylinder_rank))
 
 #        global_toc("REALLY IN SOLVE LOOP")
+        if hasattr(self,"_PHIter"):
+           global_toc(f"Starting to solve all subproblems - iteration={self._PHIter} - rank={self.global_rank}",True)            
 
         # note that when there is no bundling, scenarios are subproblems
         if use_scenarios_not_subproblems:
@@ -287,10 +299,14 @@ class SPOpt(SPBase):
         else:
             s_source = self.local_subproblems
         for k,s in s_source.items():
-            logger.debug("  in loop solve_loop k={}, rank={}".format(k, self.cylinder_rank))
+#            if hasattr(self,"_PHIter"):            
+#                global_toc("  in loop solve_loop for iteration={}, k={}, rank={}".format(self._PHIter, k, self.global_rank),True)
 #            global_toc(f"About to solve subproblem {k}")
             if tee:
                 print(f"Tee solve for {k} on global rank {self.global_rank}")
+            if hasattr(self,"_PHIter"):                            
+               tee = (self.global_rank == 6)# and (self._PHIter == 1))
+            solve_start_time=time.time()
             pyomo_solve_time = self.solve_one(solver_options, k, s,
                                               dtiming=dtiming,
                                               verbose=verbose,
@@ -298,8 +314,11 @@ class SPOpt(SPBase):
                                               gripe=gripe,
                 disable_pyomo_signal_handling=disable_pyomo_signal_handling
             )
-
-#        global_toc(f"Done with all subproblems - rank={self.global_rank}",True)            
+            if hasattr(self,"_PHIter"):            
+                global_toc("Measured solve time={} and pyomo solve time={} for iteration={}, k={}, rank={}".format(time.time()-solve_start_time,pyomo_solve_time,self._PHIter, k, self.global_rank),True)
+                
+        if hasattr(self,"_PHIter"):            
+           global_toc(f"Done with all subproblems - iteration={self._PHIter} - rank={self.global_rank}",True)            
 
         if False: # dtiming
             global_toc("Starting gather")

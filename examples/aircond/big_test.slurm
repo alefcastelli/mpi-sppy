@@ -40,7 +40,8 @@ EC="--Capacity 200 --QuadShortCoeff $QSC  --BeginInventory $BI --mu-dev 0 --sigm
 #echo "^^^^^^^^^ Make pickle bundles"
 #srun -n $SLURM_NTASKS python -m mpi4py bundle_pickler.py --branching-factors "$BF1 $BF2 $BF3" --pickle-bundles-dir=$PICKLE_DIR --scenarios-per-bundle=$SPB $EC
 
-srun -n $BF1 python -m mpi4py bundle_pickler.py --branching-factors "$BF1 $BF2 $BF3" --pickle-bundles-dir=$PICKLE_DIR --scenarios-per-bundle=$SPB $EC
+# UNCOMMENT THE FOLLOWING TO RE-ENABLE PICKLING
+#srun -n $BF1 python -m mpi4py bundle_pickler.py --branching-factors "$BF1 $BF2 $BF3" --pickle-bundles-dir=$PICKLE_DIR --scenarios-per-bundle=$SPB $EC
 
 
 #echo "***** Use pickle bundles"

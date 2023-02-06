@@ -831,7 +831,7 @@ class PHBase(mpisppy.spopt.SPOpt):
             global_toc('Rank: {} - After Update_W'.format(self.cylinder_rank), self.cylinder_rank == 0)
 
             self.conv = self.convergence_diff()
-            global_toc('Rank: {} - After convergence_diff'.format(self.cylinder_rank), self.cylinder_rank == 0)
+            global_toc('Rank: {} - After convergence_diff'.format(self.global_rank), True)
             if have_extensions:
                 self.extobject.miditer()
 
@@ -855,7 +855,7 @@ class PHBase(mpisppy.spopt.SPOpt):
                  and self.options["tee-rank0-solves"]
                 and self.cylinder_rank == 0
             )
-#            global_toc('Rank: {} - Starting solve loop'.format(self.cylinder_rank), True)
+            global_toc('Rank: {} - Starting solve loop'.format(self.global_rank), True)
 #            import gc
 #            gc.disable()
             self.solve_loop(
@@ -866,12 +866,16 @@ class PHBase(mpisppy.spopt.SPOpt):
                 tee=teeme,
                 verbose=verbose
             )
-#            global_toc('Rank: {} - After solve loop'.format(self.cylinder_rank), True)            
+            global_toc('Rank: {} - Iteration: {} - After solve loop'.format(self.global_rank, self._PHIter), True)            
 
             if have_extensions:
                 self.extobject.enditer()
 
 #            global_toc('After extensions')
+
+            converger_start_time=time.time()
+
+            global_toc(f'After extensions and before convergence check - iteration={self._PHIter} - rank={self.global_rank}',True)                
 
             if self.spcomm is not None:
                 global_toc("Just before spcomm sync")
@@ -881,7 +885,7 @@ class PHBase(mpisppy.spopt.SPOpt):
                     global_toc("Cylinder convergence", self.cylinder_rank == 0)
                     break
 
-#            global_toc(f'After convergence check - rank={self.global_rank}',True)                
+            global_toc(f'After convergence check - iteration={self._PHIter} - rank={self.global_rank} - time={-(converger_start_time-time.time())}',True)                
 
             if dprogress and self.cylinder_rank == 0:
                 print("")
