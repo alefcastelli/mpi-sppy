@@ -1,6 +1,6 @@
 #!/bin/bash -l
-#SBATCH --job-name=aircond_demo_slurm
-#SBATCH --output=try_big_pickles_aph_nostarve.out
+#SBATCH --job-name=aircond_aph
+#SBATCH --output=aph_nostarve.out
 #SBATCH --ntasks=1800
 #SBATCH --nodes=201
 #SBATCH --time=00:60:00
@@ -8,7 +8,7 @@
 #SBATCH --mail-type=ALL
 
 export MPICH_ASYNC_PROGRESS=1
-source ${HOME}/venvs/mpisppy-jan2022/bin/activate
+source ${HOME}/venvs/mpisppy-jan2023/bin/activate
 
 date
 NODENAME="$(srun hostname)"
@@ -40,11 +40,11 @@ EC="--Capacity 200 --QuadShortCoeff $QSC  --BeginInventory $BI --mu-dev 0 --sigm
 
 # There are no restrictions on the number of processors for the pickler and it could be given as many as the maxiumum number of cores (or threads?) that will be used in the next step.
 echo "^^^^^^^^^ Make pickle bundles"
-srun -n $SLURM_NTASKS unbuffer python -m mpi4py bundle_pickler.py --branching-factors $BF1 $BF2 $BF3 $BF4 --pickle-bundles-dir=$PICKLE_DIR --scenarios-per-bundle=$SPB $EC
+srun -n $SLURM_NTASKS unbuffer python -m mpi4py bundle_pickler.py --branching-factors "$BF1 $BF2 $BF3 $BF4" --pickle-bundles-dir=$PICKLE_DIR --scenarios-per-bundle=$SPB $EC
 
 #echo "***** Use pickle bundles"
 # It is entirely up to the user to make sure that the scenario count and scenarios per bundle match between creating the pickles and using them (the costs probably don't matter, since the pickle has it all)
-srun -n $SLURM_NTASKS unbuffer python -m mpi4py aircond_cylinders.py --run-async --aph-frac-needed=1.0 --aph-dispatch-frac=0.20 --max-iterations=100 --default-rho=1 --solver-name=${SOLVERNAME} --branching-factors $PBF --rel-gap 0.0001 --abs-gap 2 --max-solver-threads 2 --start-seed $SEED --no-fwph --no-lagranger --bundles-per-rank=0  --scenarios-per-bundle=$SPB --write-solution --intra-hub-conv-thresh 0 --unpickle-bundles-dir=$PICKLE_DIR $EC --with-display-progress --solver-options="method=0"
+srun -n $SLURM_NTASKS unbuffer python -m mpi4py aircond_cylinders.py --run-async --aph-frac-needed=1.0 --aph-dispatch-frac=0.20 --max-iterations=100 --default-rho=1 --solver-name=${SOLVERNAME} --branching-factors $PBF --rel-gap 0.0001 --abs-gap 2 --max-solver-threads 2 --start-seed $SEED --bundles-per-rank=0  --scenarios-per-bundle=$SPB --write-solution --intra-hub-conv-thresh 0 --unpickle-bundles-dir=$PICKLE_DIR $EC --display-progress --solver-options="method=0" --lagrangian --xhatshuffle
 #--with-display-convergence-detail
 
 ###python aircond_cylinders.py --help
