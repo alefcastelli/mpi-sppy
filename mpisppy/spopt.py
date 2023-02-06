@@ -10,6 +10,8 @@ import inspect
 import numpy as np
 from mpisppy import MPI
 
+import gurobipy
+
 import pyomo.environ as pyo
 from pyomo.opt import SolverFactory, SolutionStatus, TerminationCondition
 
@@ -140,6 +142,16 @@ class SPOpt(SPBase):
             else:
                 s._solver_plugin.set_objective(active_objective_datas[0])
                 set_objective_time = time.time() - set_objective_start_time
+                
+                if hasattr(self,"_PHIter"):
+                    obj = active_objective_datas[0]
+                    start_time = time.time()
+                    gurobi_expr, referenced_vars = s._solver_plugin._get_expr_from_pyomo_expr(obj.expr, s._solver_plugin._max_obj_degree)
+    #                print("Number of referenced vars=",len(referenced_vars))
+                    expr_extract_time=time.time() - start_time
+                    start_time = time.time()
+                    s._solver_plugin._solver_model.setObjective(gurobi_expr,gurobipy.GRB.MINIMIZE)
+                    print("Global rank=", self.global_rank, " - Time for setObjective=",time.time()-start_time," - Time for get_expr_from_pyomo_expr=",expr_extract_time)
         else:
             set_objective_time = 0
     
