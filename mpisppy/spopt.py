@@ -288,14 +288,15 @@ class SPOpt(SPBase):
                 disable_pyomo_signal_handling=disable_pyomo_signal_handling
             ))
 
-        if dtiming:
+        if True: # dtiming:
             all_pyomo_solve_times = self.mpicomm.gather(pyomo_solve_times, root=0)
             if self.cylinder_rank == 0:
                 print("Pyomo solve times (seconds):")
-                print("\tmin=,%4.2f, mean=,%4.2f, max=,%4.2f" %
-                      (np.min(all_pyomo_solve_times),
-                      np.mean(all_pyomo_solve_times),
-                      np.max(all_pyomo_solve_times)))
+                print("global_rank=,%d, min=,%4.2f, mean=,%4.2f, max=,%4.2f" %
+                      (self.global_rank,
+                       np.min(all_pyomo_solve_times),
+                       np.mean(all_pyomo_solve_times),
+                       np.max(all_pyomo_solve_times)))
 
 
     def Eobjective(self, verbose=False):
