@@ -358,7 +358,7 @@ class Hub(SPCommunicator):
         window.Lock(self.strata_rank)
         window.Put((values, len(values), MPI.DOUBLE), self.strata_rank)
         window.Unlock(self.strata_rank)
-        global_toc(f"hub-to-spoke - leaving - iteration={self.current_iteration()} - global rank={self.global_rank} - total time={time.time()-start_time}",True)                
+#        global_toc(f"hub-to-spoke - leaving - iteration={self.current_iteration()} - global rank={self.global_rank} - total time={time.time()-start_time}",True)                
 
     def hub_from_spoke(self, values, spoke_num):
         """ spoke_num is the rank in the strata_comm, so it is 1-based not 0-based
@@ -388,9 +388,9 @@ class Hub(SPCommunicator):
         if revert:
             if values[-1] > self.remote_write_ids[spoke_num - 1]:
                 self.remote_write_ids[spoke_num - 1] = values[-1]
-                global_toc(f"hub-from-spoke - leaving (True) - iteration={self.current_iteration()} - global rank={self.global_rank} - total time in func={time.time()-start_time}",True)                                        
+#                global_toc(f"hub-from-spoke - leaving (True) - iteration={self.current_iteration()} - global rank={self.global_rank} - total time in func={time.time()-start_time}",True)                                        
                 return True
-            global_toc(f"hub-from-spoke - leaving (False) - iteration={self.current_iteration()} - global rank={self.global_rank} - total time in func={time.time()-start_time}",True)                                    
+#            global_toc(f"hub-from-spoke - leaving (False) - iteration={self.current_iteration()} - global rank={self.global_rank} - total time in func={time.time()-start_time}",True)                                    
         else:
             new_id = int(values[-1])
             local_val = np.array((new_id,), 'i')
