@@ -1,8 +1,9 @@
 #!/bin/bash -l
 #SBATCH --job-name=aircond_demo_slurm
 #SBATCH --output=big_test.out
-#SBATCH --ntasks=45
-#SBATCH --nodes=2
+#SBATCH --ntasks=30
+#SBATCH --nodes=1
+#SBATCH --cpus-per-task=1
 #SBATCH --time=00:05:00
 #SBATCH --account=mpisppy
 #SBATCH --mail-type=ALL
@@ -52,12 +53,16 @@ EC="--Capacity 200 --QuadShortCoeff $QSC  --BeginInventory $BI --mu-dev 0 --sigm
 
 ###python aircond_cylinders.py --help
 
-# BELOW IS FOR APH
-
-#srun -n $SLURM_NTASKS unbuffer python -m mpi4py aircond_cylinders.py --run-async --aph-frac-needed=1.0 --aph-dispatch-frac=0.20 --max-iterations=100 --default-rho=1 --solver-name=${SOLVERNAME} --branching-factors $PBF --rel-gap 0.0001 --abs-gap 2 --max-solver-threads 2 --start-seed $SEED --bundles-per-rank=0  --scenarios-per-bundle=$SPB --write-solution --intra-hub-conv-thresh 0 --unpickle-bundles-dir=$PICKLE_DIR $EC --display-progress --solver-options="method=0" --lagrangian --xhatshuffle
-
-# BELOW IS FOR PH
-
 # DON'T BREATHE ON THE BELOW...
 
-srun -n $SLURM_NTASKS unbuffer python -m mpi4py aircond_cylinders.py --max-iterations=3 --default-rho=1 --solver-name=${SOLVERNAME} --branching-factors $PBF --rel-gap 0.0001 --abs-gap 2 --max-solver-threads 2 --start-seed $SEED --bundles-per-rank=0  --scenarios-per-bundle=$SPB --write-solution --intra-hub-conv-thresh 0 --unpickle-bundles-dir=$PICKLE_DIR $EC --display-progress --solver-options="method=0" --lagrangian --xhatshuffle
+# FOLLOWING IS FOR PH
+
+#srun -n $SLURM_NTASKS unbuffer python -m mpi4py aircond_cylinders.py --max-iterations=3 --default-rho=1 --solver-name=${SOLVERNAME} --branching-factors $PBF --rel-gap 0.0001 --abs-gap 2 --max-solver-threads 2 --start-seed $SEED --bundles-per-rank=0  --scenarios-per-bundle=$SPB --write-solution --intra-hub-conv-thresh 0 --unpickle-bundles-dir=$PICKLE_DIR $EC --display-progress --solver-options="method=0" --lagrangian --xhatshuffle
+
+# FOLLOWING IS FOR APH
+
+srun -n $SLURM_NTASKS unbuffer python -m mpi4py aircond_cylinders.py --run-async --aph-frac-needed=1.0 --aph-dispatch-frac=0.20 --max-iterations=100 --default-rho=1 --solver-name=${SOLVERNAME} --branching-factors $PBF --rel-gap 0.0001 --abs-gap 2 --max-solver-threads 2 --start-seed $SEED --bundles-per-rank=0  --scenarios-per-bundle=$SPB --write-solution --intra-hub-conv-thresh 0 --unpickle-bundles-dir=$PICKLE_DIR $EC --display-progress --solver-options="method=0" --xhatshuffle
+
+#--lagrangian
+
+
