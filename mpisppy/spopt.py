@@ -142,16 +142,6 @@ class SPOpt(SPBase):
             else:
                 s._solver_plugin.set_objective(active_objective_datas[0])
                 set_objective_time = time.time() - set_objective_start_time
-                
-                if hasattr(self,"_PHIter"):
-                    obj = active_objective_datas[0]
-                    start_time = time.time()
-                    gurobi_expr, referenced_vars = s._solver_plugin._get_expr_from_pyomo_expr(obj.expr, s._solver_plugin._max_obj_degree)
-    #                print("Number of referenced vars=",len(referenced_vars))
-                    expr_extract_time=time.time() - start_time
-                    start_time = time.time()
-                    s._solver_plugin._solver_model.setObjective(gurobi_expr,gurobipy.GRB.MINIMIZE)
-                    print("Global rank=", self.global_rank, " - Time for setObjective=",time.time()-start_time," - Time for get_expr_from_pyomo_expr=",expr_extract_time)
         else:
             set_objective_time = 0
     
@@ -300,16 +290,14 @@ class SPOpt(SPBase):
                 disable_pyomo_signal_handling=disable_pyomo_signal_handling
             ))
 
-        if True: # dtiming:
+        if dtiming:
             all_pyomo_solve_times = self.mpicomm.gather(pyomo_solve_times, root=0)
             if self.cylinder_rank == 0:
                 print("Pyomo solve times (seconds):")
-                print("global_rank=,%d, min=,%4.2f, mean=,%4.2f, max=,%4.2f" %
-                      (self.global_rank,
-                       np.min(all_pyomo_solve_times),
-                       np.mean(all_pyomo_solve_times),
-                       np.max(all_pyomo_solve_times)))
-
+                print("\tmin=,%4.2f, mean=,%4.2f, max=,%4.2f" %
+                      (np.min(all_pyomo_solve_times),
+                      np.mean(all_pyomo_solve_times),
+                      np.max(all_pyomo_solve_times)))
 
     def Eobjective(self, verbose=False):
         """ Compute the expected objective function across all scenarios.
